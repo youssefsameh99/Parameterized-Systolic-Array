@@ -1,0 +1,181 @@
+module simple_systolic_array(
+    input clk,
+    input rst_n,
+    input valid_in,
+    input [11:0] matrix_a_in,
+    input [11:0] matrix_b_in,
+    output [23:0] matrix_c_out,
+    output reg valid_out
+);
+//internal 3 wire to get the 12 bit input on 3 wires
+wire [3:0] a_in [0:2]; 
+wire [3:0] b_in [0:2];
+
+
+
+//wires between the input and the registers before pe blocks
+wire [3:0] a_input1_reg;
+wire [3:0] b_input1_reg;
+wire[3:0] a_input2_reg1;
+wire[3:0] b_input2_reg1;
+wire[3:0] a_input2_reg2;
+wire[3:0] b_input2_reg2;
+
+//internal wires for the output of the pe blocks
+wire [3:0] a00_out, a01_out, a02_out;
+wire [3:0] a10_out, a11_out, a12_out;
+wire [3:0] a20_out, a21_out, a22_out;
+
+wire [3:0] b00_out, b01_out, b02_out;
+wire [3:0] b10_out, b11_out, b12_out;
+wire [3:0] b20_out, b21_out, b22_out;
+
+
+//sum inside the pe blocks
+wire [7:0] sum00_in, sum01_in, sum02_in;
+wire [7:0] sum10_in, sum11_in, sum12_in;
+wire [7:0] sum20_in, sum21_in, sum22_in;
+
+
+//output of the pe blocks
+wire [7:0] sum00_out, sum01_out, sum02_out;
+wire [7:0] sum10_out, sum11_out, sum12_out;
+wire [7:0] sum20_out, sum21_out, sum22_out;
+
+
+
+//divide the input into the 3 wires
+assign a_in[0] = matrix_a_in[3:0];
+assign a_in[1] = matrix_a_in[7:4];
+assign a_in[2] = matrix_a_in[11:8];
+assign b_in[0] = matrix_b_in[3:0];
+assign b_in[1] = matrix_b_in[7:4];
+assign b_in[2] = matrix_b_in[11:8];
+
+
+DFF dff_a1(clk , rst_n , a_in[1], a_input1_reg);
+DFF dff_a2(clk , rst_n , a_in[2], a_input2_reg1);
+DFF dff_a22(clk , rst_n , a_input2_reg1, a_input2_reg2);
+
+
+DFF dff_b1(clk , rst_n , b_in[1], b_input1_reg);
+DFF dff_b2(clk , rst_n , b_in[2], b_input2_reg1);
+DFF dff_b22(clk , rst_n , b_input2_reg1, b_input2_reg2);
+
+
+//first row of pe blocks
+pe pe00(clk,rst_n, a_in[0], b_in[0], sum00_in, a00_out, b00_out, sum00_out,valid_out);
+pe pe01(clk,rst_n, a00_out, b_input1_reg, sum01_in, a01_out, b01_out, sum01_out,valid_out);
+pe pe02(clk,rst_n, a01_out, b_input2_reg2, sum02_in, a02_out, b02_out, sum02_out,valid_out);
+
+//second row of pe blocks
+pe pe10(clk,rst_n, a_input1_reg, b00_out, sum10_in, a10_out, b10_out, sum10_out,valid_out);
+pe pe11(clk,rst_n, a10_out, b01_out, sum11_in, a11_out, b11_out, sum11_out,valid_out);
+pe pe12(clk,rst_n, a11_out, b02_out, sum12_in, a12_out, b12_out, sum12_out,valid_out);
+
+//third row of pe blocks
+pe pe20(clk,rst_n, a_input2_reg2, b10_out, sum20_in, a20_out, b20_out, sum20_out,valid_out);
+pe pe21(clk,rst_n, a20_out, b11_out, sum21_in, a21_out, b21_out, sum21_out,valid_out);
+pe #("TRUE") pe22(clk,rst_n, a21_out, b12_out, sum22_in, a22_out, b22_out, sum22_out,valid_out);
+
+
+reg [1:0] clk_counter;
+reg [23:0] sum_out;
+
+always@(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        sum_out <= 0;
+        clk_counter <= 0;
+        valid_out <= 0;
+    end else begin
+        if(!valid_in) begin
+            clk_counter <= clk_counter + 1;
+            if(clk_counter == 0) begin
+                sum_out <= {sum00_out, sum01_out, sum02_out};
+            end
+            else if(clk_counter == 1) begin
+                sum_out <= {sum10_out, sum11_out, sum12_out};
+            end
+            else if(clk_counter == 2) begin
+                sum_out <= {sum20_out, sum21_out, sum22_out};
+            end
+            else begin
+                valid_out <= 1'b0;
+                clk_counter <= 0;
+            end
+
+
+    end
+end
+end
+
+
+assign matrix_c_out = sum_out;
+endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+module DFF(
+    input clk,
+    input rst_n,
+    input [3:0] d,
+    output reg [3:0] q
+);
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            q <= 0;
+        end else begin
+            q <= d;
+        end
+    end
+endmodule
+
+
+module pe #(parameter VALIDOUT = "FALSE")(
+    input clk,
+    input rst_n,
+    input [3:0] a_in,
+    input [3:0] b_in,
+    input [7:0] sum_in,
+    output reg [3:0] a_out,
+    output reg [3:0] b_out,
+    output reg [7:0] sum_out,
+    output valid_out
+);
+generate
+    if (VALIDOUT == "TRUE") begin
+        valid_out = 1'b1;
+    end else begin
+        valid_out = 1'b0;
+    end
+endgenerate
+
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            a_out <= 0;
+            b_out <= 0;
+            sum_out <= 0;
+            sum_in <= 0; 
+        end else begin
+            a_out <= a_in;
+            b_out <= b_in;
+            sum_out <= sum_in + (a_in * b_in);
+        end
+    end
+
+endmodule
