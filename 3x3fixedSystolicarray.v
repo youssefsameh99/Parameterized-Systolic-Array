@@ -4,26 +4,30 @@
  input [data_size*3-1:0] matrix_b_in,
  input valid_in,
  output reg valid_out,
- output [2*data_size:0] c1,c2,c3,c4,c5,c6,c7,c8,c9
+ output reg [data_size*3*2-1:0] matrix_c_out
+ 
  );
+ wire [2*data_size-1:0] c1,c2,c3,c4,c5,c6,c7,c8,c9;
 
 
 
-    reg [2:0] valid_shift;
-   always @(posedge clk) begin
+    reg [3:0] counter1;
+always @(posedge clk) begin
     if (reset) begin
-      valid_shift <= 0;
+        counter1 <= 0;
     end else begin
-      valid_shift <= {valid_shift[1:0], valid_in};
+        if (counter1 < 7) counter1 <= counter1 + 1;
     end
-  end
+end
 
-  always @(posedge clk) begin
+always @(posedge clk) begin
     if (reset)
-      valid_out <= 0;
-    else
-      valid_out <= valid_shift[2];
-  end
+        valid_out <= 0;
+    else begin
+        valid_out <= (counter1 >= 4 && counter1 <= 6); // outputs valid at cycles 4,5,6
+    end
+end
+
 
 
  
@@ -50,6 +54,20 @@ DFF dff6(.clk(clk), .rst_n(reset), .d(b3_reg1), .q(b3_reg2));
  PE PE8 (.clk(clk), .reset(reset), .in_a(a7to8), .in_b(b5to8), .out_a(a8to9), .out_b(), .out_c(c8));
  PE PE9 (.clk(clk), .reset(reset), .in_a(a8to9), .in_b(b6to9), .out_a(), .out_b(), .out_c(c9));
 
+    always @(*) begin
+            case (counter1)
+                5: begin
+                     matrix_c_out[2*data_size-1:0] = c1; matrix_c_out[data_size*4-1:2*data_size] = c2; matrix_c_out[data_size*6-1:data_size*4] = c3;
+                end
+                6: begin
+                     matrix_c_out[2*data_size-1:0] = c4; matrix_c_out[data_size*4-1:2*data_size] = c5; matrix_c_out[data_size*6-1:data_size*4] = c6;
+                end
+                7: begin
+                     matrix_c_out[2*data_size-1:0] = c7; matrix_c_out[data_size*4-1:2*data_size] = c8; matrix_c_out[data_size*6-1:data_size*4] = c9;
+                end
+            endcase
+    end
+
 
 
 
@@ -60,18 +78,18 @@ DFF dff6(.clk(clk), .rst_n(reset), .d(b3_reg1), .q(b3_reg2));
  module PE#(parameter data_size=8)(
  input wire reset,clk,
  input wire [data_size-1:0] in_a,in_b,
- output reg [2*data_size:0] out_c,
+ output reg [2*data_size-1:0] out_c,
  output reg [data_size-1:0] out_a,out_b
  );
+ 
 
  always @(posedge clk)begin
  if(reset) begin
  out_a <= 0;
  out_b <= 0;
  out_c <= 0;
- end
- else begin  
-out_c = out_c + in_a*in_b;
+ end else begin 
+out_c <= out_c + in_a*in_b;
  out_a <=in_a;
  out_b <=in_b;
  end
