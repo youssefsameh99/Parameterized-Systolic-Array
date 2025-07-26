@@ -1,73 +1,45 @@
- module test;
-
- reg clk;
- reg reset;
- reg [7:0] a1;
- reg [7:0] a2;
- reg [7:0] a3;
- reg [7:0] b1;
- reg [7:0] b2;
- reg [7:0] b3;
- reg valid_in;
- 
- wire [16:0] c1;
- wire [16:0] c2;
- wire [16:0] c3;
- wire [16:0] c4;
- wire [16:0] c5;
- wire [16:0] c6;
- wire [16:0] c7;
- wire [16:0] c8;
- wire [16:0] c9;
+module test();
+reg clk, reset;
+reg [23:0] matrix_a_in, matrix_b_in;
+reg valid_in; 
 wire valid_out;
+wire [144:0] matrix_c_out;
+top uut (
+    .clk(clk),
+    .reset(reset),
+    .matrix_a_in(matrix_a_in),
+    .matrix_b_in(matrix_b_in),
+    .valid_in(valid_in),
+    .valid_out(valid_out),
+    .matrix_c_out(matrix_c_out)
+);
+initial begin
+  clk = 0;
+  forever #1 clk = ~clk; // Clock period of 2 time units
+end
 
- 
- top uut (
- .clk(clk), 
-.reset(reset), 
-.a1(a1), 
-.a2(a2), 
-.a3(a3), 
-.b1(b1), 
-.b2(b2), 
-.b3(b3), 
-.c1(c1), 
-.c2(c2), 
-.c3(c3), 
-.c4(c4), 
-.c5(c5), 
-.c6(c6), 
-.c7(c7), 
-.c8(c8), 
-.c9(c9)
- );
-
- initial begin
-
- clk = 0;
- reset = 0;
- valid_in = 0;
- a1 = 0;   a2 = 0;   a3 = 0;   b1 = 0;   b2 = 0;   b3 = 0;
- #5 reset = 1;
- #5 reset = 0;
- @(negedge clk);
- valid_in = 1;
- a1 = 8'h01;   a2 = 8'h04;   a3 = 8'h07;   b1 = 8'h02;   b2 = 8'h01;   b3 = 8'h03;
- @(negedge clk);
-  a1 = 8'h02;   a2 = 8'h05;   a3 = 8'h08;   b1 = 8'h04;   b2 = 8'h05;   b3 = 8'h07;
-    @(negedge clk);
-     a1 = 8'h03;   a2 = 8'h06;   a3 = 8'h09;   b1 = 8'h06;   b2 = 8'h09;   b3 = 8'h08;
-     @(negedge clk);
-     a1 = 0;   a2 = 0;   a3 = 0;   b1 = 0;   b2 = 0;   b3 = 0;
-     valid_in = 0;
- 
-
- #100;
- $stop;
- end
-
- 
- initial begin
- forever #1 clk = ~clk;
- end
- endmodule
+initial begin
+  reset = 1;
+  valid_in = 0;
+  matrix_a_in = 24'h000000; // Initialize to zero
+  matrix_b_in = 24'h000000; // Initialize to zero
+  
+ reset = 1; // Release reset after 5 time units
+  @(negedge clk);
+  valid_in = 1; // Indicate valid input
+  reset = 0; // Assert reset again for a short duration
+  matrix_a_in = 24'h741; // Example values for matrix A
+  matrix_b_in = 24'h312; // Example values for matrix B
+  @(negedge clk);
+    matrix_a_in = 24'h852; // Example values for matrix A
+  matrix_b_in = 24'h754; // Example values for matrix B
+  @(negedge clk);
+  matrix_a_in = 24'h963; // Example values for matrix A
+  matrix_b_in = 24'h896; // Example values for matrix B
+  @(negedge clk);
+  valid_in = 0; // Clear valid input after processing
+  repeat(10) @(negedge clk); // Wait for some cycles to observe outputs
+  
+  $stop; // End simulation
+end
+endmodule
