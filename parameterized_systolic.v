@@ -1,6 +1,6 @@
 module systolic_array #(
 parameter DATAWIDTH = 8,
-parameter N_SIZE = 3)(
+parameter N_SIZE = 5)(
 input clk,rst_n,valid_in,
 input [N_SIZE*DATAWIDTH-1:0] matrix_a_in,matrix_b_in,
 output reg valid_out,
@@ -10,18 +10,32 @@ output reg [N_SIZE*2*DATAWIDTH-1:0] matrix_c_out
 
 wire [DATAWIDTH-1:0] a_reg[0:N_SIZE-1];
 wire [DATAWIDTH-1:0] b_reg[0:N_SIZE-1];
-assign a_reg[0]=matrix_a_in[DATAWIDTH-1 : 0];
-assign b_reg[0]=matrix_b_in[DATAWIDTH-1 : 0];
+assign a_reg[0]= (valid_in) ? matrix_a_in[DATAWIDTH-1 : 0] : {DATAWIDTH{1'b0}};
+assign b_reg[0]= (valid_in) ? matrix_b_in[DATAWIDTH-1 : 0] : {DATAWIDTH{1'b0}};
 
 genvar i, j;
 generate
- for ( i=1;i<N_SIZE;i=i+1) begin
- REG #(.WIDTH(DATAWIDTH),.DELAY_STAGES(i)) A(clk,rst_n,matrix_a_in[(i+1)*DATAWIDTH-1 -: DATAWIDTH],a_reg[i]);  
- end   
- for(j=1;j<N_SIZE;j=j+1) begin
- REG #(.WIDTH(DATAWIDTH),.DELAY_STAGES(j)) B(clk,rst_n,matrix_b_in[(j+1)*DATAWIDTH-1 -: DATAWIDTH],b_reg[j]);  
- end
+    for (i = 1; i < N_SIZE; i = i + 1) begin : A_PIPE
+        wire [DATAWIDTH-1:0] a_input = valid_in ? matrix_a_in[(i+1)*DATAWIDTH-1 -: DATAWIDTH] : {DATAWIDTH{1'b0}};
+        REG #(.WIDTH(DATAWIDTH), .DELAY_STAGES(i)) A(
+            clk,
+            rst_n,
+            a_input,
+            a_reg[i]
+        );
+    end
+
+    for (j = 1; j < N_SIZE; j = j + 1) begin : B_PIPE
+        wire [DATAWIDTH-1:0] b_input = valid_in ? matrix_b_in[(j+1)*DATAWIDTH-1 -: DATAWIDTH] : {DATAWIDTH{1'b0}};
+        REG #(.WIDTH(DATAWIDTH), .DELAY_STAGES(j)) B(
+            clk,
+            rst_n,
+            b_input,
+            b_reg[j]
+        );
+    end
 endgenerate
+
 
 wire   [2*DATAWIDTH-1:0] c [0:N_SIZE-1][0:N_SIZE-1];
 wire   [DATAWIDTH-1:0] a_bet_pe     [0:N_SIZE-1][0:N_SIZE-1];
@@ -36,6 +50,34 @@ generate
         end
     end
 endgenerate
+
+reg [N_SIZE] clk_counter;
+always@(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        clk_counter <= 0;
+    end
+    else clk_counter <= clk_counter + 1;
+end
+
+
+integer out_col;
+always @(*) begin
+    if (clk_counter >= 2*N_SIZE - 1 && clk_counter <= 3*N_SIZE - 2) begin
+        valid_out = 1'b1;
+        for (out_col = 0; out_col < N_SIZE; out_col = out_col + 1) begin
+            matrix_c_out[(out_col+1)*2*DATAWIDTH-1 -: 2*DATAWIDTH] = 
+                c[clk_counter - (2*N_SIZE - 1)][out_col];
+        end
+    end else begin
+        matrix_c_out = 'b0;
+        valid_out = 1'b0;
+    end
+end
+
+
+
+
+
 
 
 
@@ -70,7 +112,7 @@ module REG (clk,rst_n,in,q);
 endmodule
 
 
- module PE#(parameter data_size=8,parameter N_SIZE = 3)(
+ module PE#(parameter data_size=8)(
  input wire clk,rst_n,
  input wire [data_size-1:0] in_a,in_b,
  output reg [2*data_size-1:0] out_c,
