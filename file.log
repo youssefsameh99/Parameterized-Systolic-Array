@@ -1,0 +1,65 @@
+vlib work
+# ** Warning: (vlib-34) Library already exists at "work".
+# Errors: 0, Warnings: 1
+vlog systolic_array_tb.sv systolic_array.sv
+# QuestaSim-64 vlog 2021.1 Compiler 2021.01 Jan 19 2021
+# Start time: 21:40:24 on Jul 27,2025
+# vlog -reportprogress 300 systolic_array_tb.sv systolic_array.sv 
+# ** Error: (vlog-7) Failed to open design unit file "systolic_array_tb.sv" in read mode.
+# No such file or directory. (errno = ENOENT)
+# End time: 21:40:24 on Jul 27,2025, Elapsed time: 0:00:00
+# Errors: 1, Warnings: 0
+# D:/Qsim/win64/vlog failed.
+vsim -voptargs=+acc work.systolic_array_tb
+# vsim -voptargs="+acc" work.systolic_array_tb 
+# Start time: 21:40:24 on Jul 27,2025
+# ** Note: (vsim-8009) Loading existing optimized design _opt
+# Loading sv_std.std
+# Loading work.systolic_array_tb(fast)
+# Loading work.systolic_array(fast)
+# Loading work.DFF(fast)
+# Loading work.DFF(fast__1)
+# Loading work.DFF(fast__2)
+# Loading work.DFF(fast__3)
+# Loading work.PE(fast)
+
+log -r /*
+add wave *
+run -all
+# Input Matrix A =
+#  Row 1 : 1  2  3  4  5
+#  Row 2 : 6  7  8  9 10
+#  Row 3 :11 12 13 14 15
+#  Row 4 :16 17 18 19 20
+#  Row 5 :21 22 23 24 25
+# Input Matrix B =
+#  Row 1 : 26 27 28 29 30
+#  Row 2 : 31 32 33 34 35
+#  Row 3 : 36 37 38 39 40
+#  Row 4 : 41 42 43 44 45
+#  Row 5 : 46 47 48 49 50
+# output matrix C : 
+# 
+# Row:1 590 605 620 635 650 
+# Row:3 1490 1530 1570 1610 1650 
+# Row:3 2390 2455 2520 2585 2650 
+# Row:4 3290 3380 3470 3560 3650 
+# Row:5 4190 4305 4420 4535 4650 
+# === End of Output ===
+# ** Note: $stop    : C:/Users/Sameh Fawzy/Desktop/youssefsameh_01288215640/simu/systolic_array_tb.sv(118)
+#    Time: 28 ns  Iteration: 1  Instance: /systolic_array_tb
+# Break in Module systolic_array_tb at C:/Users/Sameh Fawzy/Desktop/youssefsameh_01288215640/simu/systolic_array_tb.sv line 118
+
+write wave -format vcd -output simulation.vcd
+# printing wave to file simulation.vcd
+# ** Error: Acs sdne.
+# 
+#        Unable to replace existing ini file (C:/Users/Sameh Fawzy/Desktop/stlab0qsimlablocation/lab00.mpf).  File can not be renamed.
+# ** Error: Acs sdne.
+# 
+#        Unable to replace existing ini file (C:/Users/Sameh Fawzy/Desktop/stlab0qsimlablocation/lab00.mpf).  File can not be renamed.
+# ** Error: Acs sdne.
+# 
+#        Unable to replace existing ini file (C:/Users/Sameh Fawzy/Desktop/stlab0qsimlablocation/lab00.mpf).  File can not be renamed.
+# End time: 21:40:57 on Jul 27,2025, Elapsed time: 0:00:33
+# Errors: 3, Warnings: 3
